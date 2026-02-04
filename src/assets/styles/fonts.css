@@ -1,0 +1,127 @@
+/* SF Pro Text - Thin (100) */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('../fonts/SF-Pro-Text-Thin.otf') format('opentype');
+  font-weight: 100;
+  font-style: normal;
+}
+
+/* SF Pro Text - Thin Italic (100 italic) */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('../fonts/SF-Pro-Text-ThinItalic.otf') format('opentype');
+  font-weight: 100;
+  font-style: italic;
+}
+
+/* SF Pro Text - Light (300) */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('../fonts/SF-Pro-Text-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+}
+
+/* SF Pro Text - Light Italic (300 italic) */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('../fonts/SF-Pro-Text-LightItalic.otf') format('opentype');
+  font-weight: 300;
+  font-style: italic;
+}
+
+/* SF Pro Text - Regular (400) */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('../fonts/SF-Pro-Text-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* SF Pro Text - Regular Italic (400 italic) */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('../fonts/SF-Pro-Text-RegularItalic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* SF Pro Text - Medium (500) */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('../fonts/SF-Pro-Text-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+/* SF Pro Text - Medium Italic (500 italic) */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('../fonts/SF-Pro-Text-MediumItalic.otf') format('opentype');
+  font-weight: 500;
+  font-style: italic;
+}
+
+/* SF Pro Text - Semibold (600) */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('../fonts/SF-Pro-Text-Semibold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+}
+
+/* SF Pro Text - Semibold Italic (600 italic) */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('../fonts/SF-Pro-Text-SemiboldItalic.otf') format('opentype');
+  font-weight: 600;
+  font-style: italic;
+}
+
+/* SF Pro Text - Bold (700) */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('../fonts/SF-Pro-Text-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* SF Pro Text - Bold Italic (700 italic) */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('../fonts/SF-Pro-Text-BoldItalic.otf') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+}
+
+/* SF Pro Text - Heavy (800) */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('../fonts/SF-Pro-Text-Heavy.otf') format('opentype');
+  font-weight: 800;
+  font-style: normal;
+}
+
+/* SF Pro Text - Heavy Italic (800 italic) */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('../fonts/SF-Pro-Text-HeavyItalic.otf') format('opentype');
+  font-weight: 800;
+  font-style: italic;
+}
+
+/* SF Pro Text - Black (900) */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('../fonts/SF-Pro-Text-Black.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+}
+
+/* SF Pro Text - Black Italic (900 italic) */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('../fonts/SF-Pro-Text-BlackItalic.otf') format('opentype');
+  font-weight: 900;
+  font-style: italic;
+}
