@@ -4,7 +4,7 @@ const DB_FILENAME = "appdb.json";
 
 let db: any = {};
 
-async function initDatabase() {
+async function initDatabase(object:Record<string, any>) {
   try {
     const result = await Filesystem.readFile({
       path: DB_FILENAME,
@@ -19,7 +19,7 @@ async function initDatabase() {
   }
 
   async function recreateDb() {
-    db = {}
+    db = object
 
     await saveDB();
   }
@@ -82,11 +82,11 @@ async function remove(table: string, filter: any) {
   await saveDB();
 }
 
-export const LocalDatabase = {
-  init: initDatabase,
+export const Database = {
+  initDatabase: initDatabase,
   createTable: createTable,
-  select: select,
-  insert: insert,
-  update: update,
-  delete: remove
+  selectTable: select,
+  insertTable: insert,
+  updateTable: update,
+  deleteTable: remove,
 }

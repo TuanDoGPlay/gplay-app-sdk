@@ -69,7 +69,8 @@ export async function runApp() {
 
   checkAndInstallUpdate().then()
   const config = requireProjectConfig()
-
+  document.documentElement.style.setProperty('--background', config.color.background)
+  document.documentElement.style.setProperty('--primary-text', config.color.primaryText)
   assignHome(config.defaultScreen.home)
   if (config.additionalRouter) {
     const routes: RouteRecordRaw[] = config.additionalRouter?.map((item: RouterConfig) => {

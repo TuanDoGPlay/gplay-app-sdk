@@ -16,8 +16,8 @@ html {
 
 body {
   font-family: "SF Pro Text", sans-serif;
-  color: #fff;
-  background: #000;
+  color:var(--primary-text, #fff);
+  background: var(--background, #000);
 }
 
 #app {

@@ -19,16 +19,9 @@ onMounted(async () => {
 <template>
   <div class="app-layout">
     <div class="main-content">
-      <router-view v-slot="{ Component, route: r }">
-        <transition :name="transitionName" mode="out-in">
-          <div :key="r.fullPath" class="page">
-            <component :is="Component"> </component>
-          </div>
-        </transition>
-      </router-view>
+      <component :is="config.layout.component" v-if="config && config.layout.component"> </component>
     </div>
     <div :style="{ '--ads-height': getMaxAdHeight('banner') + 'px' }" class="bottom-area">
-      <component :is="config.navbar.component()" v-if="config && config.navbar.enable"> </component>
       <div class="ads-placeholder"></div>
     </div>
   </div>
@@ -52,40 +45,27 @@ onMounted(async () => {
   -webkit-overflow-scrolling: touch;
 }
 
-.tab-track {
+.page {
+  /* Chiếm toàn bộ không gian của main-content */
+  width: 100%;
   height: 100%;
-  display: flex;
-  width: 200%;
-  transition: transform 0.22s ease;
-  will-change: transform;
-}
 
-.tab-track.is-home {
-  transform: translate3d(0, 0, 0);
-}
+  /* Quan trọng: Định vị tuyệt đối để 2 page (vào và ra)
+     có thể nằm chồng lên nhau trong lúc đang transition */
+  position: absolute;
+  top: 0;
+  left: 0;
 
-.tab-track.is-profile {
-  transform: translate3d(-50%, 0, 0);
-}
-
-.tab-pane {
-  width: 50%;
-  height: 100%;
+  /* Hỗ trợ scroll nội bộ bên trong trang nếu cần */
   overflow-y: auto;
   overflow-x: hidden;
-  position: relative;
-  -webkit-overflow-scrolling: touch;
-}
 
-/* để tab inactive không bắt scroll/click */
-.tab-pane.inactive {
-  pointer-events: none;
+  will-change: transform, opacity;
 }
 
 .bottom-area {
   width: 100%;
   flex-shrink: 0;
-  background-color: var(--background-navbar, #000000);
   z-index: 100;
 
   padding-bottom: env(safe-area-inset-bottom, 0px);

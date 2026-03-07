@@ -60,7 +60,6 @@
     "cors": "^2.8.5",
     "express": "^5.2.1",
     "firebase": "^12.7.0",
-    "gsap": "^3.13.0",
     "html-to-image": "^1.11.13",
     "prettier": "3.4.2",
     "sass": "1.57.0",
