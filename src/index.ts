@@ -6,7 +6,6 @@ import type { RouteLocationRaw } from 'vue-router'
 import { loadRewardedVideo, showRewardedVideo } from '@/common/applovin.ts'
 import { Database } from '@/common/database.ts'
 import { type ShowOptions, Toast } from '@capacitor/toast'
-import { captureImage } from '@/common/capture.ts'
 import { Capacitor } from '@capacitor/core'
 
 export function init(config: ProjectConfigData) {
@@ -29,7 +28,7 @@ export async function showToast(options: ShowOptions) {
   }
 }
 
-export { captureImage }
 export { Database }
+export { captureImage } from '@/common/capture.ts'
 export { loadRewardedVideo, showRewardedVideo }
 export type { ProjectConfigData } from './types/index'

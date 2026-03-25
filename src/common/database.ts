@@ -32,6 +32,7 @@ async function saveDB() {
     data: JSON.stringify(db, null, 2),
     encoding: Encoding.UTF8
   });
+  console.log("Database saved", db);
 }
 
 async function createTable(table: string) {

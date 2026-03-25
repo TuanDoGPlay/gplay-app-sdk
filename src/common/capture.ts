@@ -5,7 +5,7 @@ import { nextTick } from 'vue'
 export async function captureImage(opts: CaptureAndShareOptions = {}) {
   const {
     elementId = 'capture-area',
-    pixelRatio = Math.max(2, window.devicePixelRatio || 2),
+    pixelRatio = Math.max(3, window.devicePixelRatio || 3),
     shouldIgnoreAttr = 'data-html2canvas-ignore',
   } = opts
 
@@ -19,6 +19,8 @@ export async function captureImage(opts: CaptureAndShareOptions = {}) {
   return await toPng(element, {
     pixelRatio,
     cacheBust: true,
+    quality: 1,
+    skipFonts: false,
     filter: (node) => {
       if (!(node instanceof HTMLElement)) return true
       return node.getAttribute(shouldIgnoreAttr) !== 'true'

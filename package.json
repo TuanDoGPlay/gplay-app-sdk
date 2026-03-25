@@ -1,7 +1,6 @@
 {
   "name": "gplay-app-sdk",
-  "version": "0.0.0",
-  "private": true,
+  "version": "1.0.7",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -22,7 +21,7 @@
       "require": "./dist/vite/reloadPlugin.cjs",
       "types": "./dist/vite/reloadPlugin.d.ts"
     },
-    "./style.css": "./dist/style.css"
+    "./style.css": "./dist/gplay-app-sdk.css"
   },
   "types": "./dist/index.d.ts",
   "files": [

@@ -42,7 +42,6 @@ onMounted(async () => {
   width: 100%;
   overflow-y: hidden;
   overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
 }
 
 .page {

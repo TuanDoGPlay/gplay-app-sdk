@@ -165,7 +165,6 @@ export async function showBanner() {
     applovin.createBanner(BANNER_AD_UNIT_ID, applovin.AdViewPosition.BOTTOM_CENTER)
     applovin.setBannerBackgroundColor(BANNER_AD_UNIT_ID, '#000000')
     applovin.showBanner(BANNER_AD_UNIT_ID)
-    console.log('Banner đã được hiển thị thành công')
   } catch (e) {
     console.error('Lỗi showBanner:', e)
   }
