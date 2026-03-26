@@ -149,7 +149,7 @@ function ensureAndroidPlatform(appRoot, packageRoot) {
   return true; // newly created
 }
 
-export async function buildAndroid({ appRoot, pkgRoot, rest = [] }) {
+export async function buildAndroid({ appRoot, pkgRoot, rest = [], skipBump = false, serverUrl = null }) {
   // pkgRoot bạn truyền vào thường là __dirname của bin/
   const packageRoot = path.resolve(pkgRoot, "..");
 
@@ -170,11 +170,41 @@ export async function buildAndroid({ appRoot, pkgRoot, rest = [] }) {
   ensureAndroidPlatform(appRoot, packageRoot);
 
   // 5) bump version
-  console.log("[gplay build:android] 5/5 Bumping version...");
-  bumpAndroidVersion(appRoot);
+  if (!skipBump) {
+    console.log("[gplay build:android] 5/5 Bumping version...");
+    bumpAndroidVersion(appRoot);
+  } else {
+    console.log("[gplay build:android] 5/5 Skipping version bump (dev mode).");
+  }
 
   // 6) sync android
   console.log("[gplay build:android] Syncing Android...");
   const code = runStep("npx", ["cap", "sync", "android", ...rest], { cwd: appRoot });
+
+  // 7) if serverUrl -> overwrite asset config directly
+  if (serverUrl && code === 0) {
+    const assetConfigPath = path.join(appRoot, "android", "app", "src", "main", "assets", "capacitor.config.json");
+    console.log(`[gplay build:android] Patching asset config: ${assetConfigPath}`);
+
+    const config = {
+      appId: "com.gcognify.tik.die.tok.death.clock",
+      appName: "Death Clock",
+      webDir: "dist",
+      plugins: {
+        Keyboard: {
+          resize: "none"
+        }
+      },
+      server: {
+        url: serverUrl,
+        cleartext: true
+      }
+    };
+
+    fs.mkdirSync(path.dirname(assetConfigPath), { recursive: true });
+    fs.writeFileSync(assetConfigPath, JSON.stringify(config, null, 2));
+    console.log(`  ✅ Injected server.url = "${serverUrl}"`);
+  }
+
   process.exit(code);
 }

@@ -5,19 +5,19 @@ SDK phát triển ứng dụng hybrid (Android / iOS / Web) xây dựng trên **
 ## 📦 Cài đặt
 
 ```bash
-npm install gplay-app-sdk --registry=https://repo.gplaysdk.com/repository/npm/  
+npm install @gplay/app-sdk --registry=https://repo.gplaysdk.com/repository/npm/  
 ```
 
 Import style (bắt buộc):
 
 ```typescript
-import 'gplay-app-sdk/style.css'
+import '@gplay/app-sdk/style.css'
 ```
 
 ## 🚀 Khởi tạo
 
 ```typescript
-import { init } from 'gplay-app-sdk'
+import { init } from '@gplay/app-sdk'
 
 init({
   app: { id: 'com.example.myapp', name: 'My App' },
@@ -39,7 +39,7 @@ init({
 ### Điều hướng
 
 ```typescript
-import { goToRouter, goToHome, useRoute } from 'gplay-app-sdk'
+import { goToRouter, goToHome, useRoute } from '@gplay/app-sdk'
 
 goToRouter({ name: 'Settings' })  // Chuyển trang
 goToHome()                         // Về trang chủ
@@ -49,7 +49,7 @@ const route = useRoute()           // Lấy thông tin route hiện tại
 ### Thông báo
 
 ```typescript
-import { showToast } from 'gplay-app-sdk'
+import { showToast } from '@gplay/app-sdk'
 
 showToast({ text: 'Thành công!' })
 // Native: Toast | Web: alert()
@@ -58,7 +58,7 @@ showToast({ text: 'Thành công!' })
 ### Chụp màn hình
 
 ```typescript
-import { captureImage } from 'gplay-app-sdk'
+import { captureImage } from '@gplay/app-sdk'
 
 const base64 = await captureImage({
   elementId: 'capture-area',    // ID element cần chụp
@@ -69,7 +69,7 @@ const base64 = await captureImage({
 ### Chia sẻ & Tải ảnh
 
 ```typescript
-import { shareImage, downloadImage } from 'gplay-app-sdk'
+import { shareImage, downloadImage } from '@gplay/app-sdk'
 
 // Share ảnh (Native: share sheet | Web: Web Share API)
 await shareImage(base64Data)
@@ -83,7 +83,7 @@ const uri = await downloadImage(base64Data, 'photo.png')
 ### Quảng cáo (AppLovin MAX)
 
 ```typescript
-import { loadRewardedVideo, showRewardedVideo } from 'gplay-app-sdk'
+import { loadRewardedVideo, showRewardedVideo } from '@gplay/app-sdk'
 
 await loadRewardedVideo()
 await showRewardedVideo(() => {
@@ -95,7 +95,7 @@ await showRewardedVideo(() => {
 ### Database (JSON trên Filesystem)
 
 ```typescript
-import { Database } from 'gplay-app-sdk'
+import { Database } from '@gplay/app-sdk'
 
 await Database.initDatabase({ users: [] })
 await Database.insertTable('users', { name: 'GPlay', level: 1 })
