@@ -33,11 +33,10 @@ const [, , command, ...rest] = process.argv;
 
 switch (command) {
   case "build:remote": {
-    // giữ nguyên logic của bạn nếu cần
     let code = runStep("npm", ["run", "build"], { cwd: appRoot });
     exitIfFail(code);
 
-    const zipScript = path.join(__dirname, "zip-build.js"); // hoặc .mjs tùy bạn
+    const zipScript = path.join(__dirname, "zip-build.js");
     code = runStep("node", [zipScript, ...rest], { cwd: appRoot });
     process.exit(code);
   }
@@ -52,7 +51,43 @@ switch (command) {
     await buildAndroid({ appRoot, pkgRoot: __dirname, rest });
     break;
 
+  case "build:dev": {
+    const urlIdx = rest.indexOf("--url");
+    const serverUrl = (urlIdx !== -1 && rest[urlIdx + 1]) ? rest[urlIdx + 1] : null;
+
+    if (!serverUrl) {
+      console.error("❌ Thiếu --url. Dùng: npx gplay build:dev --url http://192.168.x.x:4000");
+      process.exit(1);
+    }
+
+    const configPath = path.join(appRoot, "capacitor.config.json");
+    let originalConfig = null;
+
+    if (fs.existsSync(configPath)) {
+      originalConfig = fs.readFileSync(configPath, "utf8");
+    }
+
+    try {
+      const config = originalConfig ? JSON.parse(originalConfig) : {};
+      config.server = config.server || {};
+      config.server.url = serverUrl;
+      config.server.cleartext = true;
+
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+      console.log(`✅ Đã inject server.url = "${serverUrl}" vào capacitor.config.json`);
+
+      const filteredRest = rest.filter((_, i) => i !== urlIdx && i !== urlIdx + 1);
+      await buildAndroid({ appRoot, pkgRoot: __dirname, rest: filteredRest });
+    } finally {
+      if (originalConfig) {
+        fs.writeFileSync(configPath, originalConfig);
+        console.log("🔄 Đã khôi phục capacitor.config.json về trạng thái gốc.");
+      }
+    }
+    break;
+  }
+
   default:
-    console.log("gplay build:remote | host-dist-remote | build:android");
+    console.log("gplay build:remote | host-dist-remote | build:android | build:dev");
     process.exit(command ? 1 : 0);
 }

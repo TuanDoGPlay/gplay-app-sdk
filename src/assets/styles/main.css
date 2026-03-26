@@ -4,9 +4,14 @@
   padding: 0;
 }
 
+/* Basic Reset for consistent cross-browser look */
 html {
   font-size: 5vw;
+  -webkit-text-size-adjust: 100%;
+  -moz-tab-size: 4;
+  tab-size: 4;
 }
+
 
 @media (min-width: 768px) {
   html {

@@ -1,5 +1,4 @@
 import './assets/styles/main.css'
-import './assets/styles/index.css'
 import { createApp } from 'vue'
 import App from './App.vue'
 import router, { addRoutes, assignHome } from './router'
@@ -8,11 +7,13 @@ import { initMax } from './common/applovin'
 import { initAppsFlyer } from './common/appsflyer'
 import type { RouterConfig } from '@/types/router'
 import { requireProjectConfig } from '@/state'
+import { initFirebase } from './common/firebase'
 
 export async function runApp() {
   const app = createApp(App)
-  initMax().then()
-  initAppsFlyer().then()
+  await initMax()
+  await initAppsFlyer().then()
+  await initFirebase()
 
   const config = requireProjectConfig()
   document.documentElement.style.setProperty('--background', config.color.background)

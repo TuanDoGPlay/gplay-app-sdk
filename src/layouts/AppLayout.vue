@@ -6,9 +6,6 @@ import { requireProjectConfig } from '@/state.ts'
 
 const route = useRoute()
 const config = ref()
-const transitionName = computed(() => {
-  return (route.meta.transition as string) || 'slide-left'
-})
 
 onMounted(async () => {
   config.value = requireProjectConfig()

@@ -2,7 +2,8 @@ import type { ProjectConfigData } from '@/types'
 import { setProjectConfig } from '@/state.ts'
 import { runApp } from '@/main.ts'
 import router from '@/router'
-import type { RouteLocationRaw } from 'vue-router'
+import { useRoute, type RouteLocationRaw } from 'vue-router'
+
 import { loadRewardedVideo, showRewardedVideo } from '@/common/applovin.ts'
 import { Database } from '@/common/database.ts'
 import { type ShowOptions, Toast } from '@capacitor/toast'
@@ -15,6 +16,10 @@ export function init(config: ProjectConfigData) {
 
 export async function goToRouter(params: RouteLocationRaw) {
   await router.push(params)
+}
+
+export function goToHome() {
+  router.push({ name: 'home' })
 }
 
 export async function showToast(options: ShowOptions) {
@@ -31,4 +36,6 @@ export async function showToast(options: ShowOptions) {
 export { Database }
 export { captureImage } from '@/common/capture.ts'
 export { loadRewardedVideo, showRewardedVideo }
+export { useRoute }
+
 export type { ProjectConfigData } from './types/index'

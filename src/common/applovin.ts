@@ -153,6 +153,8 @@ export async function initMax() {
 }
 
 export async function showBanner() {
+  if (Capacitor.getPlatform() === 'web') return
+
   const applovin = await getAppLovin()
   if (!applovin) return
   const { banner: BANNER_AD_UNIT_ID } = getIds()
@@ -191,6 +193,8 @@ export function getMaxAdHeight(kind: 'banner' | 'mrec'): number {
 }
 
 export async function showMREC() {
+  if (Capacitor.getPlatform() === 'web') return
+
   const applovin = await getAppLovin()
   if (!applovin) return
   const { mrec: MREC_AD_UNIT_ID } = getIds()
@@ -230,6 +234,8 @@ export async function loadRewardedVideo() {
 }
 
 export async function showRewardedVideo(onClose: () => void) {
+  if (Capacitor.getPlatform() === 'web') return
+
   const applovin = await getAppLovin()
   if (!applovin) return
   const { rewarded: REWARDED_AD_UNIT_ID } = getIds()

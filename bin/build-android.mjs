@@ -1,6 +1,8 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { bumpAndroidVersion } from "./bump-version.mjs";
+
 
 function runStep(cmd, args, opts = {}) {
   const r = spawnSync(cmd, args, { stdio: "inherit", shell: true, ...opts });
@@ -164,10 +166,14 @@ export async function buildAndroid({ appRoot, pkgRoot, rest = [] }) {
   ensureCapacitorInit(appRoot, rest);
 
   // 4) ensure android platform + manifest template (only when android/ does not exist)
-  console.log("[gplay build:android] 4/4 Ensuring Android platform...");
+  console.log("[gplay build:android] 4/5 Ensuring Android platform...");
   ensureAndroidPlatform(appRoot, packageRoot);
 
-  // 5) sync android
+  // 5) bump version
+  console.log("[gplay build:android] 5/5 Bumping version...");
+  bumpAndroidVersion(appRoot);
+
+  // 6) sync android
   console.log("[gplay build:android] Syncing Android...");
   const code = runStep("npx", ["cap", "sync", "android", ...rest], { cwd: appRoot });
   process.exit(code);

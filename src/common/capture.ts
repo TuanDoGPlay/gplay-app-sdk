@@ -2,7 +2,7 @@ import type { CaptureAndShareOptions, SlideshowVideoDeps, SlideshowVideoOptions 
 import { toJpeg, toPng } from 'html-to-image'
 import { nextTick } from 'vue'
 
-export async function captureImage(opts: CaptureAndShareOptions = {}) {
+export async function captureImage(opts: CaptureAndShareOptions = {}): Promise<string> {
   const {
     elementId = 'capture-area',
     pixelRatio = Math.max(3, window.devicePixelRatio || 3),
@@ -28,226 +28,277 @@ export async function captureImage(opts: CaptureAndShareOptions = {}) {
   })
 }
 
-function raf2() {
-  return new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+// =======================
+// HELPERS
+// =======================
+
+function waitNextFrame(): Promise<number> {
+  return new Promise((resolve) => requestAnimationFrame(resolve))
 }
 
-function sleep(ms: number) {
+async function waitFrames(count = 2) {
+  for (let i = 0; i < count; i++) await waitNextFrame()
+}
+
+function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms))
 }
 
-function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error(`TIMEOUT @ ${label} (${ms}ms)`)), ms)
-    p.then((v) => {
-      clearTimeout(t)
-      resolve(v)
-    }).catch((e) => {
-      clearTimeout(t)
-      reject(e)
-    })
-  })
-}
-
-async function waitForImages(root: HTMLElement) {
+async function waitForAllImages(root: HTMLElement) {
   const imgs = Array.from(root.querySelectorAll('img')) as HTMLImageElement[]
   await Promise.all(
-    imgs.map(async (img) => {
-      if (!img.complete || img.naturalWidth === 0) {
-        await new Promise<void>((res) => {
-          const done = () => res()
-          img.onload = done
-          img.onerror = done
-        })
-      }
-      if (typeof img.decode === 'function') {
-        await img.decode().catch(() => undefined)
-      }
+    imgs.map((img) => {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve()
+      return new Promise<void>((res) => {
+        img.onload = () => res()
+        img.onerror = () => res()
+      })
     }),
   )
 }
 
-async function getCaptureElementFromComponent(comp: any, selector = '#capture-area') {
-  await nextTick()
-  await raf2()
-  const rootEl: HTMLElement | null = comp?.$el ?? null
-  if (!rootEl) throw new Error('captureRef.$el not ready')
-  return (rootEl.querySelector?.(selector) as HTMLElement | null) ?? rootEl
-}
-
-async function loadImage(src: string): Promise<HTMLImageElement> {
-  return await new Promise((resolve, reject) => {
+async function loadImageFromUrl(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
     const img = new Image()
-    img.onload = async () => {
-      try {
-        /* @ts-ignore */ if (img.decode) await img.decode()
-      } catch {}
-      resolve(img)
-    }
-    img.onerror = reject
+    img.onload = () => resolve(img)
+    img.onerror = (e) => reject(new Error(`Failed to load image: ${e}`))
     img.src = src
   })
 }
 
-function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, w: number, h: number) {
+function drawImageCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, w: number, h: number) {
   const iw = img.naturalWidth || img.width
   const ih = img.naturalHeight || img.height
   const scale = Math.max(w / iw, h / ih)
   const dw = iw * scale
   const dh = ih * scale
-  const dx = (w - dw) / 2
-  const dy = (h - dh) / 2
-  ctx.drawImage(img, dx, dy, dw, dh)
+  ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh)
 }
 
-async function normalizeDataUrlToJpeg(dataUrl: string, outW: number, outH: number, background: string) {
-  const img = await loadImage(dataUrl)
-  const c = document.createElement('canvas')
-  c.width = outW
-  c.height = outH
-  const ctx = c.getContext('2d')
-  if (!ctx) throw new Error('no ctx')
-  ctx.fillStyle = background
-  ctx.fillRect(0, 0, outW, outH)
-  drawCover(ctx, img, outW, outH)
-  return c.toDataURL('image/jpeg', 0.92)
+function findCaptureElement(comp: any, selector: string): HTMLElement {
+  const rootEl: HTMLElement | null = comp?.$el ?? null
+  if (!rootEl) throw new Error('captureRef.$el is not available')
+  return (rootEl.querySelector?.(selector) as HTMLElement | null) ?? rootEl
 }
 
-function pickMimeTypeSafe(): string {
-  const candidates = ['video/webm;codecs=vp8', 'video/webm', 'video/mp4']
-  // @ts-ignore
+function getSupportedMimeType(): string {
+  const types = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4']
   if (typeof MediaRecorder === 'undefined') return ''
-  for (const t of candidates) {
-    // @ts-ignore
-    if (MediaRecorder.isTypeSupported?.(t)) return t
+  for (const t of types) {
+    if (MediaRecorder.isTypeSupported(t)) return t
   }
   return ''
 }
 
-function extFromMime(mime: string) {
-  if (!mime) return 'webm'
+function getExtension(mime: string): string {
   if (mime.includes('mp4')) return 'mp4'
   if (mime.includes('webm')) return 'webm'
-  if (mime.includes('quicktime')) return 'mov'
   return 'webm'
 }
 
-async function dataUrlsToVideoBlobSafe(
-  dataUrls: string[],
-  opts: { fps: number; secondsPerSlide: number; fadeMs: number; width: number; height: number; background: string },
-) {
-  if (!dataUrls.length) throw new Error('No frames')
-  // @ts-ignore
-  if (typeof MediaRecorder === 'undefined') throw new Error('MediaRecorder not supported')
+// =======================
+// PHASE 1: Capture all slides as images
+// =======================
+async function captureAllSlides(
+  deps: SlideshowVideoDeps,
+  opts: {
+    totalSlides: number
+    quality: number
+    pixelRatio: number
+    captureSelector: string
+    ignoreAttr: string
+    captureTimeoutMs: number
+  },
+): Promise<HTMLImageElement[]> {
+  const { totalSlides, quality, pixelRatio, captureSelector, ignoreAttr, captureTimeoutMs } = opts
+  const comp = deps.captureRef.value
+  if (!comp) throw new Error('captureRef is not ready')
+
+  const images: HTMLImageElement[] = []
+
+  for (let i = 0; i < totalSlides; i++) {
+    deps.onProgress?.(i + 1, totalSlides)
+
+    // Set slide content and wait for render
+    await deps.setSlide(i)
+    await nextTick()
+    await waitFrames(3)
+
+    const el = findCaptureElement(comp, captureSelector)
+
+    // Wait for fonts & images inside the element
+    try {
+      await document.fonts?.ready
+    } catch { }
+    await waitForAllImages(el)
+    await waitFrames(2)
+
+    // Capture the element as JPEG data URL
+    const capturePromise = toJpeg(el, {
+      quality,
+      pixelRatio,
+      cacheBust: true,
+      skipFonts: false,
+      filter: (node) => {
+        if (!(node instanceof HTMLElement)) return true
+        return node.getAttribute(ignoreAttr) !== 'true'
+      },
+    })
+
+    // Apply timeout
+    const dataUrl = await Promise.race([
+      capturePromise,
+      sleep(captureTimeoutMs).then(() => {
+        throw new Error(`Capture timeout for slide ${i + 1} after ${captureTimeoutMs}ms`)
+      }),
+    ])
+
+    const img = await loadImageFromUrl(dataUrl)
+    images.push(img)
+
+    // Small pause to let GC/rendering breathe
+    await sleep(50)
+  }
+
+  return images
+}
+
+// =======================
+// PHASE 2: Encode images into video
+// =======================
+async function encodeImagesToVideo(
+  images: HTMLImageElement[],
+  opts: {
+    fps: number
+    secondsPerSlide: number
+    fadeMs: number
+    width: number
+    height: number
+    background: string
+  },
+): Promise<{ blob: Blob; mime: string; ext: string; durationMs: number }> {
+  if (typeof MediaRecorder === 'undefined') {
+    throw new Error('MediaRecorder is not supported in this environment')
+  }
 
   const { fps, secondsPerSlide, fadeMs, width: w, height: h, background } = opts
-  const images = await Promise.all(dataUrls.map(loadImage))
+  const totalDurationMs = images.length * secondsPerSlide * 1000
+  const frameIntervalMs = 1000 / fps
 
+  // Create offscreen canvas
   const canvas = document.createElement('canvas')
   canvas.width = w
   canvas.height = h
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('No canvas ctx')
+  const ctx = canvas.getContext('2d')!
+  if (!ctx) throw new Error('Failed to get canvas 2d context')
 
+  // Draw first frame immediately so the canvas is not blank
+  ctx.fillStyle = background
+  ctx.fillRect(0, 0, w, h)
+  if (images.length > 0) drawImageCover(ctx, images[0], w, h)
+
+  // Set up MediaRecorder
   const stream = canvas.captureStream(fps)
-  if (!stream.getTracks().length) throw new Error('captureStream returned empty tracks')
+  const mimeType = getSupportedMimeType()
+  if (!mimeType) throw new Error('No supported video MIME type found for MediaRecorder')
 
-  const mimeType = pickMimeTypeSafe()
-  // @ts-ignore
-  const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
+  const recorder = new MediaRecorder(stream, { mimeType })
+  const chunks: Blob[] = []
 
-  const chunks: BlobPart[] = []
   recorder.ondataavailable = (e) => {
     if (e.data && e.data.size > 0) chunks.push(e.data)
   }
 
-  const totalMs = Math.max(1, Math.round(images.length * secondsPerSlide * 1000))
-  const frameInterval = Math.max(12, Math.round(1000 / fps))
-
-  let intervalId: any = null
-  let stopTimer: any = null
-  let watchdog: any = null
-  let lastTick = Date.now()
-  const startTs = Date.now()
-
-  const stopped = new Promise<void>((resolve) => {
+  // Start recording
+  const recordingStopped = new Promise<void>((resolve) => {
     recorder.onstop = () => resolve()
   })
+  recorder.start(100) // request data every 100ms
 
-  const stopAll = () => {
-    try {
-      if (intervalId) clearInterval(intervalId)
-    } catch {}
-    try {
-      if (stopTimer) clearTimeout(stopTimer)
-    } catch {}
-    try {
-      if (watchdog) clearInterval(watchdog)
-    } catch {}
-    try {
-      stream.getTracks().forEach((t) => t.stop())
-    } catch {}
-    try {
-      if (recorder.state !== 'inactive') recorder.stop()
-    } catch {}
+  // Render frames using requestAnimationFrame for smooth timing
+  const startTime = performance.now()
+
+  const renderLoop = (): Promise<void> => {
+    return new Promise((resolve) => {
+      const tick = () => {
+        const elapsed = performance.now() - startTime
+        if (elapsed >= totalDurationMs) {
+          // Draw the last frame one final time
+          ctx.globalAlpha = 1
+          ctx.fillStyle = background
+          ctx.fillRect(0, 0, w, h)
+          drawImageCover(ctx, images[images.length - 1], w, h)
+          resolve()
+          return
+        }
+
+        // Determine current slide
+        const slideIdx = Math.min(
+          images.length - 1,
+          Math.floor(elapsed / (secondsPerSlide * 1000)),
+        )
+        const slideElapsed = elapsed - slideIdx * secondsPerSlide * 1000
+        const currentImage = images[slideIdx]
+
+        // Draw background + current slide
+        ctx.globalAlpha = 1
+        ctx.fillStyle = background
+        ctx.fillRect(0, 0, w, h)
+        drawImageCover(ctx, currentImage, w, h)
+
+        // Cross-fade to next slide if applicable
+        if (fadeMs > 0 && slideIdx < images.length - 1) {
+          const fadeStartMs = secondsPerSlide * 1000 - fadeMs
+          if (slideElapsed >= fadeStartMs) {
+            const alpha = Math.min(1, (slideElapsed - fadeStartMs) / fadeMs)
+            ctx.globalAlpha = alpha
+            drawImageCover(ctx, images[slideIdx + 1], w, h)
+            ctx.globalAlpha = 1
+          }
+        }
+
+        requestAnimationFrame(tick)
+      }
+
+      requestAnimationFrame(tick)
+    })
   }
 
-  recorder.start(250)
+  await renderLoop()
 
-  intervalId = setInterval(() => {
-    const now = Date.now()
-    lastTick = now
+  // Give the recorder a moment to flush remaining data
+  await sleep(200)
 
-    const t = now - startTs
-    if (t >= totalMs) return stopAll()
+  // Stop recorder
+  if (recorder.state !== 'inactive') {
+    recorder.stop()
+  }
+  stream.getTracks().forEach((t) => t.stop())
 
-    const slideIndex = Math.min(images.length - 1, Math.floor(t / (secondsPerSlide * 1000)))
-    const slideT = t - slideIndex * secondsPerSlide * 1000
-
-    const cur = images[slideIndex]
-    const next = images[Math.min(slideIndex + 1, images.length - 1)]
-
-    ctx.globalAlpha = 1
-    ctx.fillStyle = background
-    ctx.fillRect(0, 0, w, h)
-    drawCover(ctx, cur, w, h)
-
-    if (fadeMs > 0 && slideIndex < images.length - 1) {
-      const fadeStart = secondsPerSlide * 1000 - fadeMs
-      if (slideT >= fadeStart) {
-        const a = Math.min(1, Math.max(0, (slideT - fadeStart) / fadeMs))
-        ctx.globalAlpha = a
-        drawCover(ctx, next, w, h)
-        ctx.globalAlpha = 1
-      }
-    }
-  }, frameInterval)
-
-  stopTimer = setTimeout(() => stopAll(), totalMs + 500)
-  watchdog = setInterval(() => {
-    if (Date.now() - lastTick > 5000) stopAll()
-  }, 1000)
-
+  // Wait for recorder to fully stop
   await Promise.race([
-    stopped,
-    new Promise<void>((resolve) =>
-      setTimeout(() => {
-        stopAll()
-        resolve()
-      }, totalMs + 15000),
-    ),
+    recordingStopped,
+    sleep(5000), // safety timeout
   ])
 
-  const blob = new Blob(chunks, { type: recorder.mimeType || mimeType || 'video/webm' })
-  if (!blob.size) throw new Error(`Encoded blob is empty. mime=${blob.type}`)
+  const blob = new Blob(chunks, { type: mimeType })
+  if (blob.size === 0) throw new Error('Video encoding produced an empty file')
 
-  return { blob, mime: blob.type, ext: extFromMime(blob.type), durationMs: totalMs }
+  return {
+    blob,
+    mime: mimeType,
+    ext: getExtension(mimeType),
+    durationMs: Math.round(totalDurationMs),
+  }
 }
 
 // =======================
 // EXPORTED MAIN FUNCTION
 // =======================
-export async function createSlideshowVideoFromCaptureComponent(deps: SlideshowVideoDeps, opts: SlideshowVideoOptions) {
+export async function createSlideshowVideo(
+  deps: SlideshowVideoDeps,
+  opts: SlideshowVideoOptions,
+) {
   const {
     totalSlides,
     fps = 30,
@@ -261,58 +312,29 @@ export async function createSlideshowVideoFromCaptureComponent(deps: SlideshowVi
     captureTimeoutMs = 20000,
   } = opts
 
-  if (!totalSlides) throw new Error('totalSlides = 0')
-  const comp = deps.captureRef.value
-  if (!comp) throw new Error('captureRef not ready')
+  if (!totalSlides || totalSlides <= 0) throw new Error('totalSlides must be > 0')
+  if (!deps.captureRef.value) throw new Error('captureRef is not ready')
 
-  const frameDataUrls: string[] = []
-  let OUT_W = opts.width ?? 0
-  let OUT_H = opts.height ?? 0
+  // --- Phase 1: Capture all slides as images ---
+  console.log(`[Slideshow] Capturing ${totalSlides} slides...`)
+  const images = await captureAllSlides(deps, {
+    totalSlides,
+    quality,
+    pixelRatio,
+    captureSelector,
+    ignoreAttr,
+    captureTimeoutMs,
+  })
 
-  for (let i = 0; i < totalSlides; i++) {
-    deps.onProgress?.(i + 1, totalSlides)
+  if (images.length === 0) throw new Error('No slides were captured')
 
-    await deps.setSlide(i)
-    await nextTick()
-    await raf2()
+  // Determine output dimensions from first captured image
+  const OUT_W = opts.width ?? images[0].naturalWidth ?? 720
+  const OUT_H = opts.height ?? images[0].naturalHeight ?? 1280
 
-    const el = await getCaptureElementFromComponent(comp, captureSelector)
-
-    try {
-      /* @ts-ignore */ await document.fonts?.ready
-    } catch {}
-    await raf2()
-    await waitForImages(el)
-    await raf2()
-
-    const rawJpeg = await withTimeout(
-      toJpeg(el, {
-        quality,
-        pixelRatio,
-        cacheBust: true,
-        filter: (node) => !(node instanceof HTMLElement) || node.getAttribute(ignoreAttr) !== 'true',
-      }),
-      captureTimeoutMs,
-      `toJpeg #${i + 1}`,
-    )
-
-    if (!OUT_W || !OUT_H) {
-      const img = await loadImage(rawJpeg)
-      OUT_W = img.naturalWidth || 720
-      OUT_H = img.naturalHeight || 1280
-    }
-
-    const normalized = await withTimeout(
-      normalizeDataUrlToJpeg(rawJpeg, OUT_W, OUT_H, background),
-      captureTimeoutMs,
-      `normalize #${i + 1}`,
-    )
-
-    frameDataUrls.push(normalized)
-    await sleep(10)
-  }
-
-  const result = await dataUrlsToVideoBlobSafe(frameDataUrls, {
+  // --- Phase 2: Encode captured images into video ---
+  console.log(`[Slideshow] Encoding video ${OUT_W}x${OUT_H} @ ${fps}fps...`)
+  const result = await encodeImagesToVideo(images, {
     fps,
     secondsPerSlide,
     fadeMs,
@@ -321,5 +343,6 @@ export async function createSlideshowVideoFromCaptureComponent(deps: SlideshowVi
     background,
   })
 
+  console.log(`[Slideshow] Done. ${result.blob.size} bytes, ${result.durationMs}ms`)
   return { ...result, width: OUT_W, height: OUT_H, slides: totalSlides }
 }

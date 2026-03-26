@@ -1,6 +1,6 @@
 {
   "name": "gplay-app-sdk",
-  "version": "1.0.7",
+  "version": "1.1.0",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -17,9 +17,9 @@
       "require": "./dist/index.cjs"
     },
     "./vite": {
+      "types": "./dist/vite/reloadPlugin.d.ts",
       "import": "./dist/vite/reloadPlugin.mjs",
-      "require": "./dist/vite/reloadPlugin.cjs",
-      "types": "./dist/vite/reloadPlugin.d.ts"
+      "require": "./dist/vite/reloadPlugin.cjs"
     },
     "./style.css": "./dist/gplay-app-sdk.css"
   },
@@ -33,10 +33,9 @@
     "dev": "vite --host",
     "prepublishOnly": "npm run build",
     "build": "run-p type-check \"build-only {@}\" --",
-    "preview": "vite preview",
     "build-only": "vite build",
-    "build:dev": "vite build --mode development",
-    "type-check": "vue-tsc --build --force"
+    "type-check": "vue-tsc --build --force",
+    "publish": "npm publish --registry=https://repo.gplaysdk.com/repository/npm/"
   },
   "dependencies": {
     "@capacitor-firebase/analytics": "^8.0.1",
@@ -52,7 +51,6 @@
     "@capacitor/preferences": "^8.0.0",
     "@capacitor/share": "^8.0.0",
     "@capacitor/toast": "^7.0.3",
-    "@capgo/capacitor-updater": "^8.41.2",
     "appsflyer-capacitor-plugin": "^6.17.8",
     "axios": "1.7.9",
     "cordova-plugin-applovin-max": "^2.1.0",
@@ -62,10 +60,8 @@
     "html-to-image": "^1.11.13",
     "prettier": "3.4.2",
     "sass": "1.57.0",
-    "uuid": "^13.0.0",
     "vite-plugin-dts": "^4.5.4",
     "vue": "3.5.13",
-    "vue-i18n": "11.0.1",
     "vue-router": "4.5.0"
   },
   "devDependencies": {
@@ -77,9 +73,6 @@
     "autoprefixer": "10.4.20",
     "body-parser": "1.20.3",
     "npm-run-all": "^4.1.5",
-    "postcss": "8.4.49",
-    "rollup-plugin-visualizer": "5.12.0",
-    "tailwindcss": "3.4.17",
     "terser": "5.37.0",
     "typescript": "~5.7.2",
     "vite": "6.0.6",
