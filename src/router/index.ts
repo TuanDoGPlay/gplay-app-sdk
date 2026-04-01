@@ -36,8 +36,4 @@ export function addRoutes(routes: Array<RouteRecordRaw>) {
   routes.forEach((route) => router.addRoute('root', route))
 }
 
-export function goToHome() {
-  router.push({ name: 'home' })
-}
-
 export default router

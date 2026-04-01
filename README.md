@@ -4,8 +4,17 @@ SDK phát triển ứng dụng hybrid (Android / iOS / Web) xây dựng trên **
 
 ## 📦 Cài đặt
 
+1. Tạo file .npmrc
+   registry=https://registry.npmjs.org/
+   @gplay:registry=https://repo.gplaysdk.com/repository/npm/
+
+2. Đăng nhập vào npm
+   npm login --registry=https://repo.gplaysdk.com/repository/npm/
+
+3. Cài đặt SDK:
+
 ```bash
-npm install @gplay/app-sdk --registry=https://repo.gplaysdk.com/repository/npm/  
+npm install @gplay/app-sdk @capacitor/core @capacitor/android @capacitor/ios @capacitor/app @capacitor/preferences @capacitor/share @capacitor/toast @capacitor/filesystem @capacitor-firebase/app @capacitor-firebase/analytics @capacitor-firebase/crashlytics @capacitor-firebase/remote-config appsflyer-capacitor-plugin cordova-plugin-applovin-max vue
 ```
 
 Import style (bắt buộc):
@@ -28,9 +37,15 @@ init({
     primaryText: '#ffffff',
   },
   // Tùy chọn
-  applovin: { /* ... */ },
-  appsflyer: { /* ... */ },
-  additionalRouter: [ /* ... */ ],
+  applovin: {
+    /* ... */
+  },
+  appsflyer: {
+    /* ... */
+  },
+  additionalRouter: [
+    /* ... */
+  ],
 })
 ```
 
@@ -41,9 +56,9 @@ init({
 ```typescript
 import { goToRouter, goToHome, useRoute } from '@gplay/app-sdk'
 
-goToRouter({ name: 'Settings' })  // Chuyển trang
-goToHome()                         // Về trang chủ
-const route = useRoute()           // Lấy thông tin route hiện tại
+goToRouter({ name: 'Settings' }) // Chuyển trang
+goToHome() // Về trang chủ
+const route = useRoute() // Lấy thông tin route hiện tại
 ```
 
 ### Thông báo
@@ -61,8 +76,8 @@ showToast({ text: 'Thành công!' })
 import { captureImage } from '@gplay/app-sdk'
 
 const base64 = await captureImage({
-  elementId: 'capture-area',    // ID element cần chụp
-  pixelRatio: 3,                 // Chất lượng
+  elementId: 'capture-area', // ID element cần chụp
+  pixelRatio: 3, // Chất lượng
 })
 ```
 
@@ -115,6 +130,7 @@ npx gplay build:android
 Tự động: build web → cài Capacitor → init config → add platform → **bump version** → sync.
 
 Version tự động tăng mỗi lần build:
+
 ```
 versionCode: +1
 versionName: YYYYMMDDXX (VD: 2026032601, 2026032602, ...)
@@ -129,6 +145,7 @@ npx gplay build:dev --url http://192.168.1.50:4000
 Inject `server.url` vào `capacitor.config.json`, build, rồi tự khôi phục config gốc.
 
 **Workflow:**
+
 1. Chạy `npm run dev` → Vite server lên tại port 4000
 2. Chạy `npx gplay build:dev --url http://<IP_LAN>:4000`
 3. Mở Android Studio → Run trên thiết bị
@@ -177,14 +194,14 @@ gplay-app-sdk/
 
 ## 🛠 Công nghệ
 
-| Thành phần | Công nghệ |
-|-----------|-----------|
-| Framework | Vue 3 + TypeScript |
-| Build | Vite |
-| Native | Capacitor 8 |
-| Ads | AppLovin MAX (Cordova) |
-| Analytics | Firebase, AppsFlyer |
-| Capture | html-to-image |
+| Thành phần | Công nghệ              |
+| ---------- | ---------------------- |
+| Framework  | Vue 3 + TypeScript     |
+| Build      | Vite                   |
+| Native     | Capacitor 8            |
+| Ads        | AppLovin MAX (Cordova) |
+| Analytics  | Firebase, AppsFlyer    |
+| Capture    | html-to-image          |
 
 ## 📄 License
 

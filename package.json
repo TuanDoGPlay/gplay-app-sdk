@@ -1,6 +1,6 @@
 {
   "name": "@gplay/app-sdk",
-  "version": "1.1.1",
+  "version": "1.1.6",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -21,7 +21,7 @@
       "import": "./dist/vite/reloadPlugin.mjs",
       "require": "./dist/vite/reloadPlugin.cjs"
     },
-    "./style.css": "./dist/gplay-app-sdk.css"
+    "./style.css": "./dist/app-sdk.css"
   },
   "types": "./dist/index.d.ts",
   "files": [
@@ -35,7 +35,7 @@
     "build": "run-p type-check \"build-only {@}\" --",
     "build-only": "vite build",
     "type-check": "vue-tsc --build --force",
-    "publish": "npm publish --registry=https://repo.gplaysdk.com/repository/npm/"
+    "publish": "npm publish --registry=https://repo.gplaysdk.com/repository/npm"
   },
   "dependencies": {
     "@capacitor-firebase/analytics": "^8.0.1",

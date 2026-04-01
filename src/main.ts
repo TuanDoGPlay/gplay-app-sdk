@@ -12,7 +12,7 @@ import { initFirebase } from './common/firebase'
 export async function runApp() {
   const app = createApp(App)
   await initMax()
-  await initAppsFlyer().then()
+  await initAppsFlyer()
   await initFirebase()
 
   const config = requireProjectConfig()
