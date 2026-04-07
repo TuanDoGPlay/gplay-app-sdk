@@ -1,10 +1,3 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-/* Basic Reset for consistent cross-browser look */
 html {
   font-size: 5vw;
   -webkit-text-size-adjust: 100%;

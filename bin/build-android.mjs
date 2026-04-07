@@ -20,11 +20,6 @@ function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
-function copyFileEnsured(src, dest) {
-  ensureDir(path.dirname(dest));
-  fs.copyFileSync(src, dest);
-}
-
 function readArgValue(argv, name) {
   const idx = argv.indexOf(name);
   if (idx !== -1 && argv[idx + 1]) return argv[idx + 1];
@@ -122,7 +117,31 @@ function ensureCapacitorInit(appRoot, argv) {
   exitIfFail(code, "[gplay build:android] cap init failed");
 }
 
-function ensureAndroidPlatform(appRoot, packageRoot) {
+function patchManifestCleartext(appRoot) {
+  const manifestPath = path.join(appRoot, "android", "app", "src", "main", "AndroidManifest.xml");
+  if (!fs.existsSync(manifestPath)) {
+    console.warn(`[gplay build:android] AndroidManifest.xml not found, skipping cleartext patch`);
+    return;
+  }
+
+  let xml = fs.readFileSync(manifestPath, "utf8");
+
+  if (/android:usesCleartextTraffic\s*=\s*"true"/.test(xml)) {
+    console.log(`  ✅ AndroidManifest.xml already has usesCleartextTraffic="true"`);
+    return;
+  }
+
+  if (/android:usesCleartextTraffic\s*=\s*"false"/.test(xml)) {
+    xml = xml.replace(/android:usesCleartextTraffic\s*=\s*"false"/, 'android:usesCleartextTraffic="true"');
+  } else {
+    xml = xml.replace(/<application\b/, '<application\n        android:usesCleartextTraffic="true"');
+  }
+
+  fs.writeFileSync(manifestPath, xml);
+  console.log(`  ✅ Patched AndroidManifest.xml with usesCleartextTraffic="true"`);
+}
+
+function ensureAndroidPlatform(appRoot) {
   const androidDir = path.join(appRoot, "android");
   if (fs.existsSync(androidDir)) return false; // not newly created
 
@@ -130,29 +149,10 @@ function ensureAndroidPlatform(appRoot, packageRoot) {
   let code = runStep("npx", ["cap", "add", "android"], { cwd: appRoot });
   exitIfFail(code, "[gplay build:android] cap add android failed");
 
-  // copy manifest template from package -> app
-  const manifestTemplate = path.join(packageRoot, "android", "app", "src", "main", "AndroidManifest.xml");
-  const manifestDest = path.join(appRoot, "android", "app", "src", "main", "AndroidManifest.xml");
-
-  if (!fs.existsSync(manifestTemplate)) {
-    console.error(
-      `[gplay build:android] Missing manifest template in package:\n  ${manifestTemplate}\n` +
-      `Please ensure your package contains: android/app/src/main/AndroidManifest.xml`
-    );
-    process.exit(1);
-  }
-
-  console.log("[gplay build:android] Copying AndroidManifest.xml from package -> app...");
-  copyFileEnsured(manifestTemplate, manifestDest);
-  console.log(`  ✅ ${manifestDest}`);
-
   return true; // newly created
 }
 
 export async function buildAndroid({ appRoot, pkgRoot, rest = [], skipBump = false, serverUrl = null }) {
-  // pkgRoot bạn truyền vào thường là __dirname của bin/
-  const packageRoot = path.resolve(pkgRoot, "..");
-
   // 1) npm run build (ở app)
   console.log("[gplay build:android] 1/4 Building web...");
   exitIfFail(runStep("npm", ["run", "build"], { cwd: appRoot }), "[gplay build:android] npm run build failed");
@@ -167,7 +167,7 @@ export async function buildAndroid({ appRoot, pkgRoot, rest = [], skipBump = fal
 
   // 4) ensure android platform + manifest template (only when android/ does not exist)
   console.log("[gplay build:android] 4/5 Ensuring Android platform...");
-  ensureAndroidPlatform(appRoot, packageRoot);
+  ensureAndroidPlatform(appRoot);
 
   // 5) bump version
   if (!skipBump) {
@@ -181,29 +181,18 @@ export async function buildAndroid({ appRoot, pkgRoot, rest = [], skipBump = fal
   console.log("[gplay build:android] Syncing Android...");
   const code = runStep("npx", ["cap", "sync", "android", ...rest], { cwd: appRoot });
 
-  // 7) if serverUrl -> overwrite asset config directly
+  // 7) if serverUrl -> patch asset config + AndroidManifest for cleartext traffic
   if (serverUrl && code === 0) {
     const assetConfigPath = path.join(appRoot, "android", "app", "src", "main", "assets", "capacitor.config.json");
     console.log(`[gplay build:android] Patching asset config: ${assetConfigPath}`);
 
-    const config = {
-      appId: "com.gcognify.tik.die.tok.death.clock",
-      appName: "Death Clock",
-      webDir: "dist",
-      plugins: {
-        Keyboard: {
-          resize: "none"
-        }
-      },
-      server: {
-        url: serverUrl,
-        cleartext: true
-      }
-    };
+    const config = fs.existsSync(assetConfigPath) ? readJSON(assetConfigPath) : {};
+    config.server = { url: serverUrl, cleartext: true };
 
-    fs.mkdirSync(path.dirname(assetConfigPath), { recursive: true });
     fs.writeFileSync(assetConfigPath, JSON.stringify(config, null, 2));
     console.log(`  ✅ Injected server.url = "${serverUrl}"`);
+
+    patchManifestCleartext(appRoot);
   }
 
   process.exit(code);
